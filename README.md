@@ -6,9 +6,9 @@
 ## Overview
 
 The application consists of four main parts
- * Front-end
- * REST-api
- * Crawler
+ * ["Front-end"](frontend/)
+ * ["REST-api"](api/)
+ * ["Crawler"](crawler/)
  * MongoDB
 
 !["Overview picture"](readme-assets/overview.png)
