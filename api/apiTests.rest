@@ -1,0 +1,84 @@
+### Test that the API is online
+
+GET http://localhost:8080/api/v1/
+
+### Get PC list
+
+GET http://localhost:8080/api/v1/pc
+
+### Get a specific PC
+
+GET http://localhost:8080/api/v1/pc/id/602b7791bcf771253eba138c
+
+
+### Create a new PC
+
+POST http://localhost:8080/api/v1/pc
+Content-Type: application/json
+
+{
+    "pc_name" : "Test001",
+    "pc_url" : "https://localhost:9440",
+    "username" : "Admin",
+    "password" : "passW0rd"
+}
+
+
+### Delete PC
+DELETE http://localhost:8080/api/v1/pc/id/6050b22278a9553012d45a66
+
+###  Get sites
+
+GET http://localhost:8080/api/v1/sites/
+
+### Get a specific site by id
+
+GET http://localhost:8080/api/v1/sites/id/602b7adbc6d628c71fe0c10a
+
+### Get a specific site by uuid
+
+http://localhost:8080/api/v1/sites/uuid/0005bb6b-c47f-0488-0000-00000000760d
+
+### Get alerts
+
+http://localhost:8080/api/v1/alerts/
+
+### Get specific alert by id
+
+http://localhost:8080/api/v1/alerts/id/602b80cd6eec7c0a231194e4
+
+### Get specific alert by alert_uuid
+
+http://localhost:8080/api/v1/alerts/alert_uuid/ec2824b9-58e3-4f3e-9557-cf576cb69553
+
+### Get all alerts by cluster_uuid
+
+http://localhost:8080/api/v1/alerts/cluster_uuid/04c2413f-af42-477e-b02a-45e3a4152ee7
+
+### Login
+
+POST http://localhost:8081/api/v1/login
+Content-Type: application/json
+
+{
+    "username" : "user",
+    "password" : "password"
+}
+
+### Refresh token
+
+POST http://localhost:8081/api/v1/refreshtoken
+Content-Type: application/json
+
+{
+    "refreshToken" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImVtbmlsMDMiLCJpYXQiOjE2MzE3ODk1MTJ9.PbQUJa-HegazLZjoA4YssCl4CVu0IvH1FzCMbbs2cZ4"
+}
+
+### Delete refreshToken
+
+DELETE http://localhost:8081/api/v1/logout
+Content-Type: application/json
+
+{
+    "refreshToken" : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImVtbmlsMDMiLCJpYXQiOjE2MzEyNzcyMTB9.K-MP5EvkC8Zh_i3cyg4ewPLBD7QMGSVl4WHaAvXBhXQ"
+}
