@@ -43,3 +43,84 @@ The crawler fetches configured PC's from the database and crawls them for inform
 
 ## API
 The API is built using Express and Node.js. It is responsible for autenticating users, and delivering data to the frontend.
+
+## MongoDB
+MongoDB is used as the backend database. The database holds both data collected from Prism Central, as well as configuration data for the system itself.
+
+### DB structure
+
+#### Collections:
+- alerts
+    - Holds current active alerts from Prism Centrals.
+    ```json
+    {
+        "_id" : ObjectId()
+        "originating_cluster_uuid": String,
+        "severity": String,
+        "creation_time": String,
+        "last_update_time": String,
+        "resolved": Boolean,
+        "acknowledged": Boolean,
+        "resolution_cause_list": Array,
+        "alert_msg": String,
+        "alert_uuid": String
+    }
+    ``` 
+- pc_config
+    - Holds information on all Prism Centrals to be crawled by the crawler.
+    ```json
+    {
+        "_id" : ObjectId()
+        "pc_url": String,
+        "pc_name": String,
+        "credentials": String,
+        "long": float,
+        "lat": float,
+        "pc_last_crawled": Int32,
+        "pc_last_successfull_crawl": Int32,
+        "pc_last_crawled_status": String,
+        "pc_cluster_list": Array
+    }
+    ```
+- pe_clusters
+    - Holds all discovered Prism Elements Clusters
+    ```json
+    {
+        "name": ObjectId(),
+        "nodes": Array,
+        "ncc": Object,
+        "nos": Object,
+        "network": Object,
+        "analysis": Object,
+        "metadata": Object,
+        "uuid": String,
+        "storage_capacity_bytes": String,
+        "storage_usage_bytes": String,
+        "memory_usage_ppm": String,
+        "cpu_usage_ppm": String,
+        "num_vms": String,
+        "num_nodes": String,
+        "lat": String,
+        "long": String,
+        "status": String
+    }
+    ```
+- refreshTokens
+    - Holds all active refreshtokens for JWT auth
+    ```json
+    {
+        "_id" : ObjectId(),
+        "refreshToken": String
+    }
+    ```
+- users
+    - Holds all usernames and hashed and salted passwords
+    ```json
+    {
+        "_id" : ObjectId(),
+        "username": String,
+        "password": String,
+        "salt": String,
+        "note": String
+    }
+    ```
