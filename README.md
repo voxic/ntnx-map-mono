@@ -6,15 +6,15 @@
 ## Overview
 
 The application consists of four main parts
- * ["Front-end"](frontend/)
- * ["REST-api"](api/)
- * ["Crawler"](crawler/)
+ * [Front-end](frontend/)
+ * [REST-api](api/)
+ * [Crawler](crawler/)
  * MongoDB
 
 !["Overview picture"](readme-assets/overview.png)
 
 ## Front-end
-THe frontend is written in React, it communicates with the REST-api.
+The frontend is written in React, it communicates with the REST-api.
 
 ### Map
 The map will let the user get a quick overview over the whole environtment.
@@ -37,3 +37,9 @@ Locations needs to be configured with an Longitude and a Latitude before they ca
 Access to the system is limited to registerd users and/or LDAP configured access.
 The system will firs check against local users and then external (LDAP) users.
 !["User config"](readme-assets/users.png)
+
+## Crawler
+The crawler fetches configured PC's from the database and crawls them for information
+
+## API
+The API is built using Express and Node.js. It is responsible for autenticating users, and delivering data to the frontend.
