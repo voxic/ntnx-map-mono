@@ -129,7 +129,25 @@ MongoDB is used as the backend database. The database holds both data collected 
 
 See the README of the different components for environment setup.
 
-Container images are pending.
+### Create first user
+The first user needs to be created in the database manually.
+
+Add this object to the ```users``` collection.
+
+
+```JSON
+
+    {
+        username:"admin",
+        hash:"064be738a216bde353d1e4f65570f6d4f29a6a0aa2eacc848467b5926d34c8d01c611e03154ed731958b18a32b3615166c0cc317da3fabc09338df07b4714bb0,
+        salt:"db15145a143c6e9a821379d91ff4102d"
+    }
+
+```
+
+This would add the user ```admin``` with password ```admin```
+
+#### Container images are pending
 
 # NOTICE
 
