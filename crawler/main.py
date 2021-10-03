@@ -7,6 +7,7 @@ import math
 import threading
 import concurrent.futures
 from nested_lookup import get_occurrence_of_key
+import os
 
 def humanbytes(B):
    'Return the given bytes as a human friendly KB, MB, GB, or TB string'
@@ -185,8 +186,8 @@ def temp_crawler(pc, db):
 if __name__ == "__main__":
 
     # connect to MongoDB, change the << MONGODB URL >> to reflect your own connection string
-    client = MongoClient('mongodb://10.0.0.22:27017')
-    db=client.ikea
+    client = MongoClient(os.getenv('MONGODB_CONNECTION_STRING'))
+    db=client[os.getenv('MONGODB_DATABASE')]
 
     # Disable urllib warnings for unsecure HTTPS
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
