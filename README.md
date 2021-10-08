@@ -115,6 +115,7 @@ MongoDB is used as the backend database. The database holds both data collected 
     ```
 - users
     - Holds all usernames and hashed and salted passwords
+
     ```json
     {
         "_id" : ObjectId(),
@@ -134,12 +135,11 @@ The first user needs to be created in the database manually.
 
 Add this object to the ```users``` collection.
 
-
-```JSON
+```json
 
     {
         username:"admin",
-        hash:"064be738a216bde353d1e4f65570f6d4f29a6a0aa2eacc848467b5926d34c8d01c611e03154ed731958b18a32b3615166c0cc317da3fabc09338df07b4714bb0,
+        password:"064be738a216bde353d1e4f65570f6d4f29a6a0aa2eacc848467b5926d34c8d01c611e03154ed731958b18a32b3615166c0cc317da3fabc09338df07b4714bb0",
         salt:"db15145a143c6e9a821379d91ff4102d"
     }
 

@@ -45,11 +45,11 @@ MongoClient.connect(process.env.MONGODB_CONNECTION_STRING)
     app.post('/api/v1/login', (req, res) => {
 
       if(!req.body.username){
-        res.status(404).send(JSON.stringify({"Error" : "Username required"}));
+        res.status(403).send(JSON.stringify({"Error" : "Username required"}));
         return
       }
       if(!req.body.password){
-        res.status(404).send(JSON.stringify({"Error" : "Password required"}));
+        res.status(403).send(JSON.stringify({"Error" : "Password required"}));
         return
       }      
       //Auth user with LDAP
@@ -79,7 +79,7 @@ MongoClient.connect(process.env.MONGODB_CONNECTION_STRING)
             })            
           }
           else {
-            res.status(404).send(JSON.stringify({"Error" : "Bad password"}));
+            res.status(403).send(JSON.stringify({"Error" : "Bad password"}));
           }
 
         }else {

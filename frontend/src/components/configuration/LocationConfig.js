@@ -148,6 +148,12 @@ const LocationConfig = () => {
 
   }, [])
 
+  useEffect(()=>{
+    if(currentLocation){
+      setEditModal(true);
+    }
+  }, [currentLocation])
+
   function handleCloseEditModal(){
     setEditModal(false);
     fetchPEs();
@@ -156,7 +162,7 @@ const LocationConfig = () => {
   function handleEditClick(e){
     const tempLoc = prismElements.find(pe => pe._id == e.target.parentElement.id)
     setCurrentLocation(tempLoc)
-    setEditModal(true);
+    
   }
 
     return (

@@ -45,7 +45,7 @@ def crawler(row, db):
         }
 
     try:
-        response = requests.request("POST", url, data=payload, headers=headers, verify=False)
+        response = requests.request("POST", url, data=payload, headers=headers,timeout=15, verify=False)
 
         if(response.status_code != 200):
             print("Error on calling PC Api: " + response.status_code)
@@ -54,6 +54,9 @@ def crawler(row, db):
     except:
         print("Failed to connect to PC: " + row['pc_name'])
         result = db.pc_config.update_one({"_id" : row["_id"]}, { "$set": { "pc_last_crawled": math.floor(time.time()),"pc_last_crawled_status": "Failed - Failed to connect to PC"}} )
+
+        # Set all associated PE clusters as disconnected
+        result = db.pe_clusters.update_many({'uuid': {'$in': row["pc_cluster_list"]}}, {'$set': {'status':'Disconnected'}})
         return
 
     # parse the JSON response
@@ -75,6 +78,7 @@ def crawler(row, db):
                 'analysis' : cluster['status']['resources']['analysis'] if get_occurrence_of_key(cluster, key='analysis') else '',
                 'metadata' : cluster['metadata'],
                 'uuid' : cluster['metadata']['uuid'],
+                'last_crawled' : math.floor(time.time()),
                 'pc_name' : row['pc_name'],
                 'pc_url' : row["pc_url"]
             }
@@ -99,7 +103,7 @@ def crawler(row, db):
             cluster_data['num_nodes'] = json_response['group_results'][0]["entity_results"][0]['data'][5]['values'][0]['values'][0]
 
             if(db.pe_clusters.find_one({'uuid' : cluster_data['uuid']})):
-                result = db.pe_clusters.replace_one({'uuid' : cluster_data['uuid']}, cluster_data)
+                result = db.pe_clusters.update_one({'uuid' : cluster_data['uuid']}, {'$set' : cluster_data })
                 print('cluster data updated: {0}'.format(result.modified_count))
             else:
                 result = db.pe_clusters.insert_one(cluster_data)
@@ -115,42 +119,65 @@ def crawler(row, db):
     response = requests.request("POST", url, data=payload, headers=headers, verify=False)
     # parse the JSON response
     json_response = json.loads(response.text)
+
+    cluster_status = "Healthy"
+    alert_statuses = []
     for alert in json_response["entities"]:
+        
         alert_msg = ''
         try: 
             alert_msg = alert['status']['resources']['parameters']['alert_msg']['string_value']
         except:
-            alert_msg = alert['status']['resources']['title']
+            alert_msg = alert['status']['resources']['title'] 
+
+        alert_statuses.append(alert['status']['resources']['severity'])
+
+        try:
+            if 'critical' in alert_statuses:
+                cluster_status = "Critical"
+            elif 'warning' in alert_statuses:
+                cluster_status = "Warning"
             
+            if(db.pe_clusters.find_one({'uuid' : alert['status']['resources']['originating_cluster_uuid']})):
+                result = db.pe_clusters.update_one(
+                {"uuid" : alert['status']['resources']['originating_cluster_uuid']}, 
+                { "$set": { "status": cluster_status}})
+                print('Updated PE status based on alert: {0}'.format(result.modified_count))
 
-        alert_data = {
-            'originating_cluster_uuid': alert['status']['resources']['originating_cluster_uuid'],
-            'severity': alert['status']['resources']['severity'],
-            'creation_time' : alert['status']['resources']['creation_time'],
-            'last_update_time' : alert['status']['resources']['last_update_time'],
-            'resolved' : alert['status']['resources']['resolution_status']['is_true'],
-            'acknowledged' : alert['status']['resources']['acknowledged_status']['is_true'],
-            'resolution_cause_list' : alert['status']['resources']['possible_cause_list'],
-            'alert_msg' : alert_msg,
-            'alert_uuid' : alert['metadata']['uuid']
-        }
+            alert_data = {
+                'originating_cluster_uuid': alert['status']['resources']['originating_cluster_uuid'],
+                'severity': alert['status']['resources']['severity'],
+                'creation_time' : alert['status']['resources']['creation_time'],
+                'last_update_time' : alert['status']['resources']['last_update_time'],
+                'resolved' : alert['status']['resources']['resolution_status']['is_true'],
+                'acknowledged' : alert['status']['resources']['acknowledged_status']['is_true'],
+                'resolution_cause_list' : alert['status']['resources']['possible_cause_list'],
+                'alert_msg' : alert_msg,
+                'alert_uuid' : alert['metadata']['uuid']
+            }
 
-        if(db.alerts.find_one({'alert_uuid' : alert_data['alert_uuid']})):
-            result = db.alerts.replace_one({'alert_uuid' : alert_data['alert_uuid']}, alert_data)
-            print('alert data updated: {0}'.format(result.modified_count))   
-        else:
-            result = db.alerts.insert_one(alert_data)
-            print('alert data stored: {0}'.format(result.inserted_id))          
+            if(db.alerts.find_one({'alert_uuid' : alert_data['alert_uuid']})):
+                result = db.alerts.replace_one({'alert_uuid' : alert_data['alert_uuid']}, alert_data)
+                print('alert data updated: {0}'.format(result.modified_count))   
+            else:
+                result = db.alerts.insert_one(alert_data)
+                print('alert data stored: {0}'.format(result.inserted_id))
+        except:
+            print("Failed to set cluster status")          
 
-    result = db.pc_config.update_one(
-        {"_id" : row["_id"]}, 
-        { "$set": 
-            { "pc_last_crawled": math.floor(time.time()), 
-            "pc_last_successfull_crawl" : math.floor(time.time()),
-            "pc_last_crawled_status": "Success", 
-            "pc_cluster_list" : pc_cluster_list}
-            })
-    print('Updated PC config DB: {0}'.format(result.modified_count))
+    
+    try:
+        result = db.pc_config.update_one(
+            {"_id" : row["_id"]}, 
+            { "$set": 
+                { "pc_last_crawled": math.floor(time.time()), 
+                "pc_last_successfull_crawl" : math.floor(time.time()),
+                "pc_last_crawled_status": "Success", 
+                "pc_cluster_list" : pc_cluster_list}
+                })
+        print('Updated PC config DB: {0}'.format(result.modified_count))
+    except:
+        print('Error updating PE status in DB')
 
     ## Get Remote sites
     for cluster in pc_cluster_list:
@@ -159,21 +186,26 @@ def crawler(row, db):
             'content-type': "application/json",
             'authorization': "Basic " + credentials
         }
-        response = requests.request("GET", url, headers=headers, verify=False)
 
-        # parse the JSON response
-        json_response = json.loads(response.text)
+        try:
+            response = requests.request("GET", url, headers=headers, verify=False)
 
-        remote_sites = []
-        for remoteSite in json_response['entities']:
-            remote_sites.append({"remote_site_uuid" : remoteSite['uuid'], 
-                                "remote_site_name" : remoteSite['name']})
+            # parse the JSON response
+            json_response = json.loads(response.text)
 
-        result = db.pe_clusters.update_one(
-        {"uuid" : cluster}, 
-        { "$set": { "remote_sites": remote_sites}})
+            remote_sites = []
+            for remoteSite in json_response['entities']:
+                remote_sites.append({"remote_site_uuid" : remoteSite['uuid'], 
+                                    "remote_site_name" : remoteSite['name']})
 
-        print('Updated PE remote sites: {0}'.format(result.modified_count))
+            result = db.pe_clusters.update_one(
+            {"uuid" : cluster}, 
+            { "$set": { "remote_sites": remote_sites}})
+
+            print('Updated PE remote sites: {0}'.format(result.modified_count))
+
+        except:
+            print('Failed to fetch remote sites')
 
 
 

@@ -380,7 +380,7 @@ MongoClient.connect(process.env.MONGODB_CONNECTION_STRING)
   });
 
   // ADD USER
-  app.post("/api/v1/users",autenticateToken, (req, res) => {
+  app.post("/api/v1/users",autenticateToken ,(req, res) => {
     console.log(req.body)
     
     if(!req.body.username) {

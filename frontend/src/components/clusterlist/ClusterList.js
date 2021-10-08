@@ -77,7 +77,7 @@ const ClusterList = () => {
             renderCell : (params) => (
                 <Chip label={params.value[0]} style={{backgroundColor : params.value[1]}}/>
             ) },
-        {field: 'lastUpdated', headerName: 'Last updated', flex: 1}
+        {field: 'lastUpdated', headerName: 'Last crawled', flex: 1}
     ];
 
 
@@ -91,7 +91,7 @@ const ClusterList = () => {
             pcURL : location.pc_url,
             peURL : 'https://'+ location.network.external_ip +':9440',
             status : [location.status, location.color],
-            lastUpdated : String(location.metadata.last_update_time).replace('T', ' ').replace('Z', '')
+            lastUpdated : String(new Date(location.last_crawled * 1000).toISOString()).replace('T', ' ').replace('Z', '').replace('.000','')
         })
     })
 
