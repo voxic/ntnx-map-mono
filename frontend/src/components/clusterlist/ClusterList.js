@@ -13,7 +13,7 @@ import Grid from '@material-ui/core/Grid';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import Button from '@material-ui/core/Button';
 import Chip from '@material-ui/core/Chip';
-import { useHistory } from 'react-router-dom'
+import { useHistory, useParams } from 'react-router-dom'
 
 
 const useStyles = makeStyles((theme) => ({
@@ -53,6 +53,10 @@ const ClusterList = () => {
 
     const history = useHistory();
 
+    const listFilter = new URLSearchParams(window.location.search).get("filter")
+
+    const filterModel = { items: [{ columnField: 'status', operatorValue: 'contains', value: listFilter }]}
+
     // Handle refresh button
     function handleRefresh(){
         fetchLocations();
@@ -79,7 +83,6 @@ const ClusterList = () => {
             ) },
         {field: 'lastUpdated', headerName: 'Last crawled', flex: 1}
     ];
-
 
     // Create rows for DataGrid
     const rows = [];
@@ -125,7 +128,12 @@ const ClusterList = () => {
                     </Grid>                    
                     <Grid item xs={12} md={12} lg={12}>
                     <div style={{ height: '55vh'}}>
-                        <DataGrid rows={rows} columns={columns} autoPageSize={true} components={{Toolbar: GridToolbar}} />
+                        <DataGrid 
+                        rows={rows} 
+                        columns={columns} 
+                        autoPageSize={true} 
+                        components={{Toolbar: GridToolbar}}
+                        filterModel={filterModel} />
                     </div>
                     <div className={classes.refreshText}>{String(dataRefreshed).replace('T', ' ').replace('Z', '')}</div>
                     </Grid>

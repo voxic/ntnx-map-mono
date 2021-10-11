@@ -183,7 +183,7 @@ export default function MainMenu({title}) {
           </ListItemIcon>
           <ListItemText primary="Map" />
         </ListItem>
-        <ListItem button onClick={()=> { history.push('/clusterlist') }}>
+        <ListItem button onClick={()=> { history.push('/clusterlist/') }}>
           <ListItemIcon>
             <ClusterListIcon />
           </ListItemIcon>

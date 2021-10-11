@@ -6,6 +6,7 @@ import Avatar from '@material-ui/core/Avatar';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import ArrowIcon from '@material-ui/icons/ArrowForward';
+import { useHistory } from 'react-router-dom'
 
 const useStyles = makeStyles((theme) => ({
     paper: {
@@ -19,6 +20,8 @@ const useStyles = makeStyles((theme) => ({
 export default function ClusterStatusCard({title, number, color}) {
     const classes = useStyles();
 
+    const history = useHistory();
+
     return (
     <Paper className={classes.paper}>
         <Grid container wrap="nowrap" spacing={2} justify="space-around" alignItems="center">
@@ -29,7 +32,7 @@ export default function ClusterStatusCard({title, number, color}) {
             <Typography noWrap>{title}</Typography>
         </Grid>   
         <Grid item>
-            <IconButton size="medium">
+            <IconButton size="medium" onClick={()=> { history.push('/clusterlist?filter='+title) }}>
                 <ArrowIcon fontSize="small"/>
             </IconButton>
         </Grid>         
