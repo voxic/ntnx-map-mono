@@ -18,6 +18,7 @@ var adConfig = {
     url: process.env.LDAP_URL,
     baseDN: process.env.BASE_DN
 };
+var ad = new ActiveDirectory(adConfig);
 
 app.use(express.json())
 app.use(cors())
@@ -47,6 +48,48 @@ function adAuth(username, password, fn){
         fn(false)
     }
   });
+}
+
+function dbAuth(db, username, password, fn){
+
+  db.collection('users').findOne({username : username})
+        .then(results => {
+        if(results){
+          const tempObj = {
+              hash : results.password,
+              salt : results.salt,
+              password : password
+          }
+          if(checkPassword(tempObj)){
+            const user = {
+              username : results.username
+            }
+            const accessToken = generateAccessToken(user)
+            const refreshToken = generateRefreshToken(user)
+
+            db.collection('refreshTokens').insertOne({"refreshToken" : refreshToken})
+            .then(results => {
+                fn({status: "success", accessToken : accessToken, refreshToken : refreshToken});
+              })
+            .catch(error => {
+              console.error(error)
+              fn({status:501, error : error})      
+            })            
+          }
+          else {
+            fn({status:403, error : "Bad password"});
+          }
+
+        }else {
+          fn({status:403, error : "User not found"});
+        }
+      })
+      .catch(error => {
+        console.error(error)
+        fn({status : 500})
+      })
+
+
 }
 
 // setup DB connection
@@ -79,6 +122,7 @@ MongoClient.connect(process.env.MONGODB_CONNECTION_STRING)
         adAuth(req.body.username, req.body.password, (result)=>{
           if(result){
             // Auth successfull
+            adAuthSuccess = true
             const user = {
               username : req.body.username
             }
@@ -95,50 +139,33 @@ MongoClient.connect(process.env.MONGODB_CONNECTION_STRING)
               res.sendStatus(501)        
             })  
 
-          } else {
-            res.status(403).send(JSON.stringify({"Error" : "Invalid credentials"}));
+          }
+          else {
+            dbAuth(db, req.body.username, req.body.password, (result) => {
+              if(result.status == "success"){
+                // Auth seccessfull
+                //Return token to user
+                res.json({accessToken : result.accessToken, refreshToken : result.refreshToken});
+              }
+              else {
+                res.status(result.status).send(JSON.stringify(result))
+              }
+            })            
           }
         })
       } else {
-
-          db.collection('users').findOne({username : req.body.username})
-          .then(results => {
-          if(results){
-            const tempObj = {
-                hash : results.password,
-                salt : results.salt,
-                password : req.body.password
-            }
-            if(checkPassword(tempObj)){
-              const user = {
-                username : results.username
-              }
-              const accessToken = generateAccessToken(user)
-              const refreshToken = generateRefreshToken(user)
-
-              db.collection('refreshTokens').insertOne({"refreshToken" : refreshToken})
-              .then(results => {
-                  res.json({accessToken : accessToken, refreshToken : refreshToken});
-                })
-              .catch(error => {
-                console.error(error)
-                res.sendStatus(501)        
-              })            
-            }
-            else {
-              res.status(403).send(JSON.stringify({"Error" : "Bad password"}));
-            }
-
-          }else {
-            res.status(404).send(JSON.stringify({"Error" : "User not found"}));
+        dbAuth(db, req.body.username, req.body.password, (result) => {
+          if(result.status == "success"){
+            // Auth seccessfull
+            //Return token to user
+            res.json({accessToken : result.accessToken, refreshToken : result.refreshToken});
+          }
+          else {
+            res.status(result.status).send(JSON.stringify(result))
           }
         })
-        .catch(error => {
-          console.error(error)
-          res.sendStatus(500)
-        })
-
       }
+
     })
 
 
