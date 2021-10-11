@@ -13,6 +13,12 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto'); 
 
+const ActiveDirectory = require('activedirectory');
+var adConfig = {
+    url: process.env.LDAP_URL,
+    baseDN: process.env.BASE_DN
+};
+
 app.use(express.json())
 app.use(cors())
 app.use(fileupload({debug:false}));
@@ -26,6 +32,21 @@ var corsOptions = {
 function checkPassword(obj){
   const hash = crypto.pbkdf2Sync(obj.password,obj.salt, 1000, 64, `sha512`).toString(`hex`); 
   return hash === obj.hash; 
+}
+
+function adAuth(username, password, fn){
+  ad.authenticate(username, password, function(err, auth) {
+    if (err) {
+        console.log('ERROR: '+JSON.stringify(err));
+        fn(false)
+    }
+    if (auth) {
+        fn(true)
+    }
+    else {
+        fn(false)
+    }
+  });
 }
 
 // setup DB connection
@@ -54,43 +75,70 @@ MongoClient.connect(process.env.MONGODB_CONNECTION_STRING)
       }      
       //Auth user with LDAP
 
-      db.collection('users').findOne({username : req.body.username})
-      .then(results => {
-        if(results){
-          const tempObj = {
-              hash : results.password,
-              salt : results.salt,
-              password : req.body.password
-          }
-          if(checkPassword(tempObj)){
+      if(adConfig.url){
+        adAuth(req.body.username, req.body.password, (result)=>{
+          if(result){
+            // Auth successfull
             const user = {
-              username : results.username
+              username : req.body.username
             }
             const accessToken = generateAccessToken(user)
             const refreshToken = generateRefreshToken(user)
 
             db.collection('refreshTokens').insertOne({"refreshToken" : refreshToken})
             .then(results => {
+                // return token to user
                 res.json({accessToken : accessToken, refreshToken : refreshToken});
               })
             .catch(error => {
               console.error(error)
               res.sendStatus(501)        
-            })            
-          }
-          else {
-            res.status(403).send(JSON.stringify({"Error" : "Bad password"}));
-          }
+            })  
 
-        }else {
-          res.status(404).send(JSON.stringify({"Error" : "User not found"}));
-        }
-      })
-      .catch(error => {
-        console.error(error)
-        res.sendStatus(500)
-      })
+          } else {
+            res.status(403).send(JSON.stringify({"Error" : "Invalid credentials"}));
+          }
+        })
+      } else {
 
+          db.collection('users').findOne({username : req.body.username})
+          .then(results => {
+          if(results){
+            const tempObj = {
+                hash : results.password,
+                salt : results.salt,
+                password : req.body.password
+            }
+            if(checkPassword(tempObj)){
+              const user = {
+                username : results.username
+              }
+              const accessToken = generateAccessToken(user)
+              const refreshToken = generateRefreshToken(user)
+
+              db.collection('refreshTokens').insertOne({"refreshToken" : refreshToken})
+              .then(results => {
+                  res.json({accessToken : accessToken, refreshToken : refreshToken});
+                })
+              .catch(error => {
+                console.error(error)
+                res.sendStatus(501)        
+              })            
+            }
+            else {
+              res.status(403).send(JSON.stringify({"Error" : "Bad password"}));
+            }
+
+          }else {
+            res.status(404).send(JSON.stringify({"Error" : "User not found"}));
+          }
+        })
+        .catch(error => {
+          console.error(error)
+          res.sendStatus(500)
+        })
+
+      }
     })
 
 

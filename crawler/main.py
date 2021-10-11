@@ -110,6 +110,11 @@ def crawler(row, db):
                 print('cluster data stored: {0}'.format(result.inserted_id))
 
     # alerts call
+
+    # clear all alerts for current PC
+    result = db.alerts.delete_many({ "originating_cluster_uuid" : {'$in': row["pc_cluster_list"]}})
+    print('Cleared: {0} alerts'.format(result.deleted_count))
+
     url = baseURL + "/api/nutanix/v3/alerts/list"
     payload = "{\"kind\":\"alert\"}"
     headers = {
@@ -130,7 +135,9 @@ def crawler(row, db):
         except:
             alert_msg = alert['status']['resources']['title'] 
 
-        alert_statuses.append(alert['status']['resources']['severity'])
+        # Only calculate status on alerts with resolved false. 
+        if(alert['status']['resources']['resolution_status']['is_true'] != True):
+            alert_statuses.append(alert['status']['resources']['severity'])
 
         try:
             if 'critical' in alert_statuses:
@@ -156,12 +163,14 @@ def crawler(row, db):
                 'alert_uuid' : alert['metadata']['uuid']
             }
 
-            if(db.alerts.find_one({'alert_uuid' : alert_data['alert_uuid']})):
-                result = db.alerts.replace_one({'alert_uuid' : alert_data['alert_uuid']}, alert_data)
-                print('alert data updated: {0}'.format(result.modified_count))   
-            else:
-                result = db.alerts.insert_one(alert_data)
-                print('alert data stored: {0}'.format(result.inserted_id))
+            #Only insert alarms from PE clusters
+            if( alert['status']['resources']['originating_cluster_uuid'] in row['pc_cluster_list'] ):
+                if(db.alerts.find_one({'alert_uuid' : alert_data['alert_uuid']})):
+                    result = db.alerts.replace_one({'alert_uuid' : alert_data['alert_uuid']}, alert_data)
+                    print('alert data updated: {0}'.format(result.modified_count))   
+                else:
+                    result = db.alerts.insert_one(alert_data)
+                    print('alert data stored: {0}'.format(result.inserted_id))
         except:
             print("Failed to set cluster status")          
 
