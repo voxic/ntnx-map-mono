@@ -39,7 +39,7 @@ The system will firs check against local users and then external (LDAP) users.
 !["User config"](readme-assets/users.png)
 
 ## Crawler
-The crawler fetches configured PC's from the database and crawls them for information
+The crawler fetches configured PC's from the database and crawls them for information.
 
 ## API
 The API is built using Express and Node.js. It is responsible for autenticating users, and delivering data to the frontend.
